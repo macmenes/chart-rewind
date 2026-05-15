@@ -1,0 +1,1282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chart Rewind — Billboard Hot 100</title>
+  <style>
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+
+    :root {
+      --p: #e94560;
+      --a: #f5a623;
+      --bg: #0a0a0a;
+      --s2: #1a1a1a;
+      --s3: #252525;
+      --t1: #e8e8e8;
+      --t2: #999;
+      --t3: #555;
+    }
+
+    .era-60s { --p:#c0392b; --a:#e8c050; --bg:#0d0a05 }
+    .era-70s { --p:#d4611a; --a:#e09030; --bg:#0d0a06 }
+    .era-80s { --p:#ff1c7a; --a:#00e5ff; --bg:#060612 }
+    .era-90s { --p:#27ae60; --a:#e67e22; --bg:#060f08 }
+    .era-00s { --p:#2980b9; --a:#e74c3c; --bg:#06080f }
+    .era-10s { --p:#8e44ad; --a:#16a085; --bg:#07060f }
+    .era-20s { --p:#e94560; --a:#f5a623; --bg:#0a0a0a }
+
+    html { background: var(--bg) }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--t1);
+      min-height: 100vh;
+      transition: background-color .7s;
+    }
+
+    /* ═══ HEADER ══════════════════════════════════════════════════════ */
+
+    .app-header {
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      padding: .6rem 1rem;
+      background: rgba(6,6,6,.9);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255,255,255,.05);
+    }
+
+    .header-row {
+      max-width: 800px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      font-weight: 900;
+      font-size: 1rem;
+      letter-spacing: -.3px;
+      color: var(--t1);
+      flex-shrink: 0;
+      user-select: none;
+    }
+    .brand span { color: var(--p) }
+
+    .header-right {
+      display: flex;
+      gap: .5rem;
+      align-items: center;
+      flex: 1;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .decade-bar { display: flex; gap: .22rem }
+
+    .btn-dec {
+      padding: .28rem .5rem;
+      border: 1px solid var(--s3);
+      border-radius: 5px;
+      background: transparent;
+      color: var(--t2);
+      font-size: .7rem;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      letter-spacing: .3px;
+      transition: all .15s;
+    }
+    .btn-dec:hover,.btn-dec.active {
+      background: var(--p);
+      color: #fff;
+      border-color: var(--p);
+    }
+
+    .date-row { display: flex; gap: .4rem; align-items: center }
+
+    .date-input {
+      padding: .35rem .55rem;
+      border-radius: 6px;
+      border: 1px solid var(--s3);
+      background: var(--s2);
+      color: var(--t1);
+      font-size: .82rem;
+      font-family: inherit;
+      color-scheme: dark;
+    }
+    .date-input:focus { outline: none; border-color: var(--p) }
+
+    .btn {
+      padding: .38rem .85rem;
+      border: none;
+      border-radius: 7px;
+      font-size: .82rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity .15s, transform .1s;
+      font-family: inherit;
+      white-space: nowrap;
+    }
+    .btn:active { transform: scale(.95) }
+    .btn:disabled { opacity: .4; cursor: not-allowed }
+
+    .btn-red {
+      background: linear-gradient(135deg, var(--p) 0%, #a01228 100%);
+      color: #fff;
+    }
+    .btn-red:hover:not(:disabled) { opacity: .85 }
+
+    .btn-outline {
+      background: var(--s2);
+      color: var(--t2);
+      border: 1px solid var(--s3);
+    }
+    .btn-outline:hover:not(:disabled) { background: var(--s3); color: var(--t1) }
+    .btn-outline.on { background: var(--a); color: #000; border-color: var(--a) }
+
+    /* ═══ HERO ════════════════════════════════════════════════════════ */
+
+    #heroSection {
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      min-height: 340px;
+    }
+
+    .hero-bg {
+      position: absolute;
+      inset: -30px;
+      background-size: cover;
+      background-position: center;
+      filter: blur(55px) brightness(.28) saturate(1.8);
+      transition: background-image .55s ease;
+    }
+
+    .hero-fade {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(to bottom, rgba(0,0,0,.55) 0%, transparent 40%),
+        linear-gradient(to top,    var(--bg) 0%, transparent 60%);
+    }
+
+    /* date row */
+
+    .hero-date-row {
+      position: relative;
+      z-index: 2;
+      max-width: 800px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 1.75rem 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .hero-nav-btn {
+      width: 2.4rem;
+      height: 2.4rem;
+      border-radius: 8px;
+      background: rgba(255,255,255,.1);
+      border: 1px solid rgba(255,255,255,.14);
+      color: rgba(255,255,255,.75);
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all .15s;
+      font-family: inherit;
+    }
+    .hero-nav-btn:hover:not(:disabled) { background: rgba(255,255,255,.2); color: #fff }
+    .hero-nav-btn:disabled { opacity: .25; cursor: not-allowed }
+
+    .hero-date-center { flex: 1; text-align: center }
+
+    .hero-week-of {
+      font-size: .62rem;
+      font-weight: 700;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.38);
+      margin-bottom: .2rem;
+    }
+
+    .hero-date-text {
+      font-size: clamp(1.55rem, 5.5vw, 2.6rem);
+      font-weight: 800;
+      letter-spacing: -1.5px;
+      line-height: 1;
+      text-shadow: 0 2px 30px rgba(0,0,0,.6);
+    }
+
+    /* song info */
+
+    .hero-body {
+      position: relative;
+      z-index: 2;
+      max-width: 800px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 0 1rem 1.75rem;
+      display: flex;
+      gap: 1.25rem;
+      align-items: flex-end;
+      animation: heroIn .4s ease both;
+    }
+
+    @keyframes heroIn {
+      from { opacity: 0; transform: translateY(14px) }
+      to   { opacity: 1; transform: translateY(0) }
+    }
+
+    .hero-art-box { position: relative; flex-shrink: 0 }
+
+    .hero-art {
+      display: block;
+      width: 110px;
+      height: 110px;
+      border-radius: 9px;
+      object-fit: cover;
+      box-shadow: 0 10px 40px rgba(0,0,0,.8);
+      background: var(--s2);
+    }
+
+    .hero-badge {
+      position: absolute;
+      top: -8px;
+      left: -8px;
+      background: var(--p);
+      color: #fff;
+      font-size: .58rem;
+      font-weight: 800;
+      letter-spacing: .6px;
+      padding: .17rem .38rem;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+    .hero-info { flex: 1; min-width: 0 }
+
+    .hero-kicker {
+      font-size: .65rem;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--p);
+      margin-bottom: .35rem;
+    }
+
+    .hero-title {
+      font-size: clamp(1.2rem, 4.5vw, 2rem);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -.3px;
+      margin-bottom: .28rem;
+    }
+
+    .hero-artist { font-size: .92rem; color: var(--t2); margin-bottom: .75rem }
+
+    .hero-pills { display: flex; gap: .42rem; flex-wrap: wrap; align-items: center }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      padding: .24rem .62rem;
+      border-radius: 20px;
+      font-size: .73rem;
+      font-weight: 600;
+    }
+    .pill-dim   { background: rgba(255,255,255,.08); color: var(--t1) }
+    .pill-gold  { background: rgba(245,166,35,.14); color: var(--a) }
+    .pill-green {
+      background: rgba(30,215,96,.12);
+      color: #1ed760;
+      text-decoration: none;
+      transition: background .15s;
+    }
+    .pill-green:hover { background: rgba(30,215,96,.22) }
+
+    .pill-playlist {
+      background: rgba(30,215,96,.12);
+      color: #1ed760;
+      border: 1px solid rgba(30,215,96,.2);
+      cursor: pointer;
+      font-family: inherit;
+      transition: background .15s;
+    }
+    .pill-playlist:hover:not(:disabled) { background: rgba(30,215,96,.22) }
+    .pill-playlist:disabled { opacity: .45; cursor: not-allowed }
+
+    /* ═══ CHART LIST ══════════════════════════════════════════════════ */
+
+    .chart-wrap {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: .4rem .5rem 5rem;
+    }
+
+    .song-row {
+      display: flex;
+      align-items: center;
+      gap: .7rem;
+      padding: .5rem .45rem;
+      border-radius: 8px;
+      text-decoration: none;
+      color: inherit;
+      transition: background .12s;
+      animation: rowIn .35s ease both;
+    }
+    .song-row:hover { background: rgba(255,255,255,.044) }
+
+    @keyframes rowIn {
+      from { opacity: 0; transform: translateX(-6px) }
+      to   { opacity: 1; transform: translateX(0) }
+    }
+
+    .song-rank {
+      min-width: 2.1rem;
+      text-align: right;
+      font-size: .88rem;
+      font-weight: 700;
+      color: var(--t3);
+      flex-shrink: 0;
+    }
+    .song-row:nth-child(-n+3) .song-rank { color: var(--a) }
+
+    .song-thumb {
+      width: 44px; height: 44px;
+      border-radius: 6px;
+      object-fit: cover;
+      background: var(--s2);
+      flex-shrink: 0;
+      display: block;
+    }
+
+    .song-info { flex: 1; min-width: 0 }
+
+    .song-title {
+      font-size: .88rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: .1rem;
+    }
+
+    .song-artist-text {
+      font-size: .78rem;
+      color: var(--t2);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .song-move { min-width: 2.6rem; text-align: center; font-size: .72rem; font-weight: 700; flex-shrink: 0 }
+    .mv-up  { color: #4caf50 }
+    .mv-dn  { color: var(--p) }
+    .mv-new { color: #42a5f5 }
+    .mv-eq  { color: var(--t3) }
+
+    .song-stats {
+      text-align: right;
+      font-size: .7rem;
+      color: var(--t3);
+      flex-shrink: 0;
+      min-width: 3.5rem;
+      line-height: 1.7;
+    }
+    .song-stats .pk { color: var(--a) }
+
+    /* ═══ LOADING OVERLAY ═════════════════════════════════════════════ */
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.55);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: .9rem;
+      z-index: 999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .22s;
+    }
+    .overlay.show { opacity: 1; pointer-events: all }
+
+    .spinner {
+      width: 34px; height: 34px;
+      border: 3px solid var(--s3);
+      border-top-color: var(--p);
+      border-radius: 50%;
+      animation: spin .65s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg) } }
+    .overlay-text { font-size: .9rem; color: var(--t2) }
+
+    /* ═══ TOAST ═══════════════════════════════════════════════════════ */
+
+    .toast {
+      position: fixed;
+      bottom: 1.75rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1c1c1c;
+      border: 1px solid var(--s3);
+      border-radius: 12px;
+      padding: .85rem 1.2rem;
+      font-size: .85rem;
+      z-index: 1001;
+      min-width: 260px;
+      max-width: 92vw;
+      text-align: center;
+      box-shadow: 0 10px 40px rgba(0,0,0,.5);
+      animation: toastIn .22s ease;
+    }
+    @keyframes toastIn {
+      from { transform: translateX(-50%) translateY(16px); opacity: 0 }
+      to   { transform: translateX(-50%) translateY(0); opacity: 1 }
+    }
+    .toast-success { border-color: rgba(30,215,96,.4) }
+    .toast-error   { border-color: rgba(233,69,96,.4) }
+
+    .toast-bar {
+      height: 3px;
+      background: var(--s3);
+      border-radius: 2px;
+      margin-top: .65rem;
+      overflow: hidden;
+    }
+    .toast-bar-fill {
+      height: 100%;
+      background: #1ed760;
+      width: 0%;
+      transition: width .25s;
+      border-radius: 2px;
+    }
+    .toast-link {
+      display: block;
+      margin-top: .45rem;
+      color: #1ed760;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .toast-link:hover { text-decoration: underline }
+
+    /* ═══ MODAL ═══════════════════════════════════════════════════════ */
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.72);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      z-index: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      animation: fadeIn .2s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+
+    .modal {
+      background: #141414;
+      border: 1px solid var(--s3);
+      border-radius: 14px;
+      padding: 1.75rem;
+      max-width: 440px;
+      width: 100%;
+      box-shadow: 0 24px 60px rgba(0,0,0,.7);
+      animation: modalIn .22s ease;
+    }
+    @keyframes modalIn {
+      from { transform: scale(.95); opacity: 0 }
+      to   { transform: scale(1);   opacity: 1 }
+    }
+
+    .modal h2 { font-size: 1.1rem; font-weight: 800; margin-bottom: .4rem }
+    .modal .modal-sub { font-size: .85rem; color: var(--t2); margin-bottom: 1.1rem }
+
+    .setup-box {
+      background: var(--s2);
+      border-radius: 8px;
+      padding: .9rem 1rem;
+      font-size: .82rem;
+      color: var(--t2);
+      margin-bottom: 1.1rem;
+      line-height: 1.85;
+    }
+    .setup-box a    { color: #1ed760; text-decoration: none }
+    .setup-box a:hover { text-decoration: underline }
+    .setup-box strong { color: var(--t1) }
+    .setup-box code {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      background: var(--s3);
+      padding: .1rem .35rem;
+      border-radius: 4px;
+      font-size: .78rem;
+      color: var(--a);
+      word-break: break-all;
+    }
+
+    .modal-input {
+      width: 100%;
+      padding: .6rem .75rem;
+      border-radius: 7px;
+      border: 1px solid var(--s3);
+      background: var(--s2);
+      color: var(--t1);
+      font-size: .88rem;
+      font-family: inherit;
+      margin-bottom: 1rem;
+      transition: border-color .15s;
+    }
+    .modal-input:focus { outline: none; border-color: #1ed760 }
+
+    .modal-actions { display: flex; gap: .5rem; justify-content: flex-end }
+
+    .btn-spotify {
+      background: #1ed760;
+      color: #000;
+      font-weight: 800;
+    }
+    .btn-spotify:hover:not(:disabled) { background: #1fdf64 }
+    .btn-spotify:disabled { background: #1ed760; opacity: .4 }
+
+    /* ═══ ERROR ═══════════════════════════════════════════════════════ */
+
+    .error-box { max-width: 800px; margin: 5rem auto; padding: 2rem; text-align: center }
+    .error-box h3 { color: var(--p); margin-bottom: .5rem }
+    .error-box p  { color: var(--t2); font-size: .88rem }
+
+    /* ═══ RESPONSIVE ══════════════════════════════════════════════════ */
+
+    @media (max-width: 560px) {
+      .decade-bar { display: none }
+      .hero-art { width: 80px; height: 80px }
+      .hero-title { font-size: 1.2rem }
+      .song-stats { display: none }
+    }
+
+    @media (max-width: 380px) {
+      .hero-art { width: 64px; height: 64px }
+      .date-input { display: none }
+    }
+  </style>
+</head>
+<body class="era-20s">
+
+  <header class="app-header">
+    <div class="header-row">
+      <div class="brand">Billboard <span>Hot 100</span></div>
+      <div class="header-right">
+        <div class="decade-bar" id="decadeBar">
+          <button class="btn-dec" data-d="60s">60s</button>
+          <button class="btn-dec" data-d="70s">70s</button>
+          <button class="btn-dec" data-d="80s">80s</button>
+          <button class="btn-dec" data-d="90s">90s</button>
+          <button class="btn-dec" data-d="00s">00s</button>
+          <button class="btn-dec" data-d="10s">10s</button>
+          <button class="btn-dec" data-d="20s">20s</button>
+        </div>
+        <div class="date-row">
+          <input type="date" id="datePicker" class="date-input" min="1958-08-04">
+          <button class="btn btn-outline" id="goBtn"      onclick="goDate()">Go</button>
+          <button class="btn btn-red"     id="shuffleBtn" onclick="loadRandom()">Shuffle</button>
+          <button class="btn btn-outline" id="top10Btn"   onclick="toggleTop10()">Top 10</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section id="heroSection" style="display:none"></section>
+    <div id="chartOutput"></div>
+  </main>
+
+  <!-- Loading overlay -->
+  <div class="overlay" id="overlay">
+    <div class="spinner"></div>
+    <div class="overlay-text" id="overlayText">Loading…</div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast" style="display:none">
+    <div id="toastMsg"></div>
+    <div class="toast-bar" id="toastBar" style="display:none">
+      <div class="toast-bar-fill" id="toastFill"></div>
+    </div>
+    <a class="toast-link" id="toastLink" href="#" target="_blank" rel="noopener" style="display:none">Open playlist →</a>
+  </div>
+
+  <!-- Spotify Client ID setup modal -->
+  <div class="modal-backdrop" id="clientIdModal" style="display:none" onclick="handleModalBackdrop(event)">
+    <div class="modal">
+      <h2>Connect Spotify</h2>
+      <p class="modal-sub">You need a free Spotify Developer app to create playlists.</p>
+      <div class="setup-box">
+        1. Go to <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener">developer.spotify.com/dashboard</a><br>
+        2. Click <strong>Create app</strong> (any name, check <strong>Web API</strong>)<br>
+        3. In <strong>Settings → Redirect URIs</strong>, add exactly:<br>
+        &nbsp;&nbsp;&nbsp;<code id="redirectUriLabel"></code><br>
+        4. Copy your <strong>Client ID</strong> and paste it below
+      </div>
+      <input type="text" id="clientIdInput" class="modal-input"
+             placeholder="Spotify Client ID (32 hex characters)"
+             autocomplete="off" autocorrect="off" spellcheck="false">
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-spotify" onclick="saveClientId()">Connect ↗</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    'use strict';
+
+    /* ── Constants ──────────────────────────────────────────────────── */
+
+    const BASE = 'https://raw.githubusercontent.com/mhollingshead/billboard-hot-100/main';
+
+    const LS = {
+      CLIENT_ID:     'cr_client_id',
+      TOKEN:         'cr_token',
+      TOKEN_EXP:     'cr_token_exp',
+      VERIFIER:      'cr_verifier',
+      PENDING_DATE:  'cr_pending_date',
+      PENDING_PL:    'cr_pending_playlist',
+    };
+
+    const LOADING_LINES = [
+      'Rewinding the tape…',
+      'Spinning up the records…',
+      'Flipping through the charts…',
+      'Digging through the archives…',
+      'Blasting from the past…',
+    ];
+
+    /* ── Placeholder data URIs ──────────────────────────────────────── */
+
+    const BLANK_SM = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44'%3E%3Crect width='44' height='44' fill='%231e1e1e'/%3E%3Ctext x='22' y='29' text-anchor='middle' font-size='14' fill='%23444'%3E%E2%99%AA%3C/text%3E%3C/svg%3E";
+    const BLANK_LG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Crect width='300' height='300' fill='%231a1a1a'/%3E%3Ctext x='150' y='175' text-anchor='middle' font-size='80' fill='%23333'%3E%E2%99%AA%3C/text%3E%3C/svg%3E";
+
+    /* ── State ──────────────────────────────────────────────────────── */
+
+    let allDates  = null;
+    let chart     = null;
+    let dateStr   = null;
+    let dateIdx   = -1;
+    let showTop10 = false;
+    const artCache = Object.create(null);
+
+    /* ── Init ───────────────────────────────────────────────────────── */
+
+    async function init() {
+      // Handle Spotify OAuth callback
+      const sp = new URLSearchParams(location.search);
+      let postAuthToken = null;
+      let pendingDate   = null;
+
+      if (sp.has('code')) {
+        pendingDate    = localStorage.getItem(LS.PENDING_DATE);
+        postAuthToken  = await handleSpotifyCallback(sp.get('code'));
+      } else if (sp.has('error')) {
+        history.replaceState(null, '', location.pathname + location.hash);
+        showToast('Spotify: ' + sp.get('error_description', sp.get('error')), 'error');
+      }
+
+      // Wire events
+      document.getElementById('decadeBar').addEventListener('click', e => {
+        const btn = e.target.closest('.btn-dec');
+        if (btn) loadDecade(btn.dataset.d);
+      });
+      document.getElementById('datePicker').addEventListener('keydown', e => {
+        if (e.key === 'Enter') goDate();
+      });
+      document.addEventListener('keydown', e => {
+        if (e.target.tagName === 'INPUT') return;
+        if (e.key === 'ArrowLeft')  nav(-1);
+        if (e.key === 'ArrowRight') nav(1);
+      });
+
+      // Init dates
+      const dates = await getDates();
+      document.getElementById('datePicker').max = dates[dates.length - 1];
+
+      // Decide which date to load
+      const hash = location.hash.slice(1);
+      if (pendingDate && /^\d{4}-\d{2}-\d{2}$/.test(pendingDate)) {
+        await loadDate(pendingDate);
+        localStorage.removeItem(LS.PENDING_DATE);
+      } else if (/^\d{4}-\d{2}-\d{2}$/.test(hash)) {
+        await loadDate(closestDate(hash, dates));
+      } else {
+        await loadRandom();
+      }
+
+      // Auto-create playlist after successful auth
+      if (postAuthToken && localStorage.getItem(LS.PENDING_PL)) {
+        localStorage.removeItem(LS.PENDING_PL);
+        await doCreatePlaylist(postAuthToken);
+      }
+    }
+
+    /* ── Data ───────────────────────────────────────────────────────── */
+
+    async function getDates() {
+      if (allDates) return allDates;
+      const r = await fetch(`${BASE}/valid_dates.json`);
+      allDates = await r.json();
+      return allDates;
+    }
+
+    function closestDate(target, dates) {
+      const t = +new Date(target + 'T00:00:00');
+      return dates.reduce((best, d) =>
+        Math.abs(+new Date(d + 'T00:00:00') - t) <
+        Math.abs(+new Date(best + 'T00:00:00') - t) ? d : best
+      );
+    }
+
+    async function loadRandom() {
+      const dates = await getDates();
+      await loadDate(dates[Math.floor(Math.random() * dates.length)]);
+    }
+
+    async function goDate() {
+      const v = document.getElementById('datePicker').value;
+      if (!v) return;
+      const dates = await getDates();
+      const c = closestDate(v, dates);
+      document.getElementById('datePicker').value = c;
+      await loadDate(c);
+    }
+
+    async function loadDecade(decade) {
+      const dates = await getDates();
+      const pfx = { '60s':'196','70s':'197','80s':'198','90s':'199','00s':'200','10s':'201','20s':'202' };
+      const pool = dates.filter(d => d.startsWith(pfx[decade]));
+      if (pool.length) await loadDate(pool[Math.floor(Math.random() * pool.length)]);
+    }
+
+    async function loadDate(ds) {
+      showOverlay(LOADING_LINES[Math.floor(Math.random() * LOADING_LINES.length)]);
+      setDisabled(true);
+      try {
+        const r = await fetch(`${BASE}/date/${ds}.json`);
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const json = await r.json();
+
+        chart   = json.data;
+        dateStr = ds;
+        const dates = await getDates();
+        dateIdx = dates.indexOf(ds);
+
+        history.replaceState(null, '', '#' + ds);
+        setEra(ds);
+        renderHero(chart[0], ds);
+        renderChart(chart);
+        loadArtBatch(chart, ds);
+
+      } catch (err) {
+        document.getElementById('chartOutput').innerHTML =
+          `<div class="error-box"><h3>Couldn't load that chart</h3><p>${esc(err.message)}</p></div>`;
+      } finally {
+        hideOverlay();
+        setDisabled(false);
+      }
+    }
+
+    function nav(dir) {
+      if (!allDates || dateIdx < 0) return;
+      const i = dateIdx + dir;
+      if (i >= 0 && i < allDates.length) loadDate(allDates[i]);
+    }
+
+    /* ── Artwork (promise-cached — concurrent requests share one fetch) ─ */
+
+    function fetchArt(song, artist) {
+      const key = song + '||' + artist;
+      if (key in artCache) return Promise.resolve(artCache[key]);
+
+      const promise = (async () => {
+        try {
+          const q = encodeURIComponent(song + ' ' + artist);
+          const r = await fetch(`https://itunes.apple.com/search?term=${q}&media=music&limit=1&entity=song`);
+          const d = await r.json();
+          const raw = d.results?.[0]?.artworkUrl100;
+          return raw ? raw.replace('100x100bb', '400x400bb') : null;
+        } catch { return null }
+      })();
+
+      artCache[key] = promise;
+      promise.then(url => { artCache[key] = url });
+      return promise;
+    }
+
+    async function loadArtBatch(songs, forDate) {
+      const top  = songs.slice(0, 10);
+      const rest = songs.slice(10);
+
+      await Promise.all(top.map(s =>
+        fetchArt(s.song, s.artist).then(url => {
+          if (url && dateStr === forDate) applyArt(s.this_week, url, s === songs[0]);
+        })
+      ));
+
+      for (let i = 0; i < rest.length; i += 10) {
+        if (dateStr !== forDate) break;
+        await Promise.all(rest.slice(i, i + 10).map(s =>
+          fetchArt(s.song, s.artist).then(url => {
+            if (url && dateStr === forDate) applyArt(s.this_week, url, false);
+          })
+        ));
+        await tick(30);
+      }
+    }
+
+    function applyArt(rank, url, isHero) {
+      const thumb = document.querySelector(`[data-rank="${rank}"] .song-thumb`);
+      if (thumb) thumb.src = url;
+      if (isHero) {
+        const art = document.getElementById('heroArt');
+        const bg  = document.getElementById('heroBg');
+        if (art) art.src = url;
+        if (bg)  bg.style.backgroundImage = `url(${url})`;
+      }
+    }
+
+    const tick = ms => new Promise(r => setTimeout(r, ms));
+
+    /* ── Era theming ────────────────────────────────────────────────── */
+
+    const ERA_CLASSES = ['era-60s','era-70s','era-80s','era-90s','era-00s','era-10s','era-20s'];
+
+    function setEra(ds) {
+      const y = parseInt(ds);
+      let era = 'era-20s';
+      if      (y < 1970) era = 'era-60s';
+      else if (y < 1980) era = 'era-70s';
+      else if (y < 1990) era = 'era-80s';
+      else if (y < 2000) era = 'era-90s';
+      else if (y < 2010) era = 'era-00s';
+      else if (y < 2020) era = 'era-10s';
+
+      ERA_CLASSES.forEach(c => document.body.classList.remove(c));
+      document.body.classList.add(era);
+      document.querySelectorAll('.btn-dec').forEach(btn =>
+        btn.classList.toggle('active', btn.dataset.d === era.replace('era-', ''))
+      );
+    }
+
+    /* ── Render ─────────────────────────────────────────────────────── */
+
+    function fmtFull(ds) {
+      return new Date(ds + 'T00:00:00').toLocaleDateString('en-US', {
+        month: 'long', day: 'numeric', year: 'numeric'
+      });
+    }
+
+    function spotifyURL(song, artist) {
+      return `https://open.spotify.com/search/${encodeURIComponent(song + ' ' + artist)}`;
+    }
+
+    function moveHTML(s) {
+      if (s.last_week === null) return '<span class="song-move mv-new">NEW</span>';
+      const d = s.last_week - s.this_week;
+      if (d > 0) return `<span class="song-move mv-up">▲${d}</span>`;
+      if (d < 0) return `<span class="song-move mv-dn">▼${Math.abs(d)}</span>`;
+      return '<span class="song-move mv-eq">—</span>';
+    }
+
+    function renderHero(s, ds) {
+      const sec = document.getElementById('heroSection');
+      sec.style.display = '';
+      const wks    = s.weeks_on_chart;
+      const kicker = s.last_week === null ? 'NEW AT NUMBER ONE' : 'NUMBER ONE THIS WEEK';
+      const prevOk = dateIdx > 0;
+      const nextOk = allDates && dateIdx < allDates.length - 1;
+
+      sec.innerHTML = `
+        <div class="hero-bg" id="heroBg" style="background-image:url(${BLANK_LG})"></div>
+        <div class="hero-fade"></div>
+        <div class="hero-date-row">
+          <button class="hero-nav-btn" id="heroPrev" ${prevOk?'':'disabled'}>←</button>
+          <div class="hero-date-center">
+            <div class="hero-week-of">week of</div>
+            <div class="hero-date-text">${fmtFull(ds)}</div>
+          </div>
+          <button class="hero-nav-btn" id="heroNext" ${nextOk?'':'disabled'}>→</button>
+        </div>
+        <div class="hero-body">
+          <div class="hero-art-box">
+            <span class="hero-badge">#1</span>
+            <img id="heroArt" class="hero-art" src="${BLANK_LG}" alt="${esc(s.song)}">
+          </div>
+          <div class="hero-info">
+            <div class="hero-kicker">${kicker}</div>
+            <div class="hero-title">${esc(s.song)}</div>
+            <div class="hero-artist">${esc(s.artist)}</div>
+            <div class="hero-pills">
+              <span class="pill pill-dim">${wks} week${wks!==1?'s':''} on chart</span>
+              <span class="pill pill-gold">Peak: #${s.peak_position}</span>
+              <a class="pill pill-green" href="${spotifyURL(s.song, s.artist)}" target="_blank" rel="noopener">▶ Listen</a>
+              <button class="pill pill-playlist" id="playlistBtn" onclick="onPlaylistClick()">＋ Top 50 Playlist</button>
+            </div>
+          </div>
+        </div>`;
+
+      document.getElementById('heroPrev').addEventListener('click', () => nav(-1));
+      document.getElementById('heroNext').addEventListener('click', () => nav(1));
+    }
+
+    function renderChart(songs) {
+      const list = showTop10 ? songs.slice(0, 10) : songs;
+      const rows = list.slice(1);
+
+      const html = rows.map((s, i) => `
+        <a class="song-row"
+           data-rank="${s.this_week}"
+           href="${spotifyURL(s.song, s.artist)}"
+           target="_blank" rel="noopener"
+           style="animation-delay:${Math.min(i*14,700)}ms">
+          <div class="song-rank">${s.this_week}</div>
+          <img class="song-thumb" src="${BLANK_SM}" alt="">
+          <div class="song-info">
+            <div class="song-title">${esc(s.song)}</div>
+            <div class="song-artist-text">${esc(s.artist)}</div>
+          </div>
+          ${moveHTML(s)}
+          <div class="song-stats">
+            <div class="pk">Peak #${s.peak_position}</div>
+            <div>${s.weeks_on_chart}w</div>
+          </div>
+        </a>`
+      ).join('');
+
+      document.getElementById('chartOutput').innerHTML =
+        `<div class="chart-wrap">${html}</div>`;
+    }
+
+    function esc(s) {
+      return String(s)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    /* ── Spotify PKCE OAuth ─────────────────────────────────────────── */
+
+    function getRedirectUri() {
+      return location.origin + location.pathname;
+    }
+
+    function getStoredToken() {
+      const token  = localStorage.getItem(LS.TOKEN);
+      const expiry = localStorage.getItem(LS.TOKEN_EXP);
+      if (!token || !expiry) return null;
+      return Date.now() < parseInt(expiry) - 60000 ? token : null;
+    }
+
+    function generateCodeVerifier() {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+      const arr = new Uint8Array(64);
+      crypto.getRandomValues(arr);
+      return Array.from(arr, x => chars[x % chars.length]).join('');
+    }
+
+    async function generateCodeChallenge(verifier) {
+      const data   = new TextEncoder().encode(verifier);
+      const digest = await crypto.subtle.digest('SHA-256', data);
+      let str = '';
+      for (const b of new Uint8Array(digest)) str += String.fromCharCode(b);
+      return btoa(str).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+    }
+
+    async function initiateSpotifyAuth(clientId) {
+      if (location.protocol === 'file:') {
+        showToast('Serve the app over HTTP/HTTPS to use Spotify (try: python3 -m http.server)', 'error');
+        return;
+      }
+      const verifier   = generateCodeVerifier();
+      const challenge  = await generateCodeChallenge(verifier);
+      localStorage.setItem(LS.VERIFIER, verifier);
+
+      const params = new URLSearchParams({
+        client_id:             clientId,
+        response_type:         'code',
+        redirect_uri:          getRedirectUri(),
+        scope:                 'playlist-modify-public playlist-modify-private',
+        code_challenge_method: 'S256',
+        code_challenge:        challenge,
+      });
+      location.href = 'https://accounts.spotify.com/authorize?' + params;
+    }
+
+    async function handleSpotifyCallback(code) {
+      const clientId = localStorage.getItem(LS.CLIENT_ID);
+      const verifier = localStorage.getItem(LS.VERIFIER);
+      localStorage.removeItem(LS.VERIFIER);
+      history.replaceState(null, '', location.pathname);
+
+      if (!clientId || !verifier) return null;
+
+      try {
+        const res = await fetch('https://accounts.spotify.com/api/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            client_id:     clientId,
+            grant_type:    'authorization_code',
+            code,
+            redirect_uri:  getRedirectUri(),
+            code_verifier: verifier,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error_description || 'Token exchange failed');
+
+        localStorage.setItem(LS.TOKEN,     data.access_token);
+        localStorage.setItem(LS.TOKEN_EXP, String(Date.now() + data.expires_in * 1000));
+        return data.access_token;
+      } catch (err) {
+        showToast('Spotify connection failed: ' + err.message, 'error');
+        return null;
+      }
+    }
+
+    /* ── Spotify API ────────────────────────────────────────────────── */
+
+    async function spotifyFetch(token, url, opts = {}) {
+      const res = await fetch(url, {
+        ...opts,
+        headers: {
+          'Authorization': 'Bearer ' + token,
+          'Content-Type':  'application/json',
+          ...(opts.headers || {}),
+        },
+        ...(opts.body ? { body: JSON.stringify(opts.body) } : {}),
+      });
+
+      if (res.status === 401) {
+        localStorage.removeItem(LS.TOKEN);
+        localStorage.removeItem(LS.TOKEN_EXP);
+        const e = new Error('Session expired');
+        e.status = 401;
+        throw e;
+      }
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        const e = new Error(err.error?.message || `HTTP ${res.status}`);
+        e.status = res.status;
+        throw e;
+      }
+      return res.status === 204 ? null : res.json();
+    }
+
+    async function searchTrackUri(token, song, artist) {
+      const q = encodeURIComponent(song + ' ' + artist);
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const data = await spotifyFetch(token,
+            `https://api.spotify.com/v1/search?q=${q}&type=track&limit=1`
+          );
+          return data.tracks?.items?.[0]?.uri || null;
+        } catch (err) {
+          if (err.status === 429) {
+            await tick(800 * (attempt + 1));
+            continue;
+          }
+          return null;
+        }
+      }
+      return null;
+    }
+
+    /* ── Playlist creation ──────────────────────────────────────────── */
+
+    async function onPlaylistClick() {
+      const clientId = localStorage.getItem(LS.CLIENT_ID);
+      if (!clientId) { showClientIdModal(); return; }
+
+      const token = getStoredToken();
+      if (!token) {
+        localStorage.setItem(LS.PENDING_PL,   '1');
+        localStorage.setItem(LS.PENDING_DATE, dateStr || '');
+        await initiateSpotifyAuth(clientId);
+        return;
+      }
+
+      await doCreatePlaylist(token);
+    }
+
+    async function doCreatePlaylist(token) {
+      if (!chart || !dateStr) return;
+
+      const btn = document.getElementById('playlistBtn');
+      if (btn) btn.disabled = true;
+
+      try {
+        // Get user profile
+        const me = await spotifyFetch(token, 'https://api.spotify.com/v1/me');
+
+        // Search for top 50 tracks
+        const top50 = chart.slice(0, 50);
+        const uris = [];
+        let notFound = 0;
+
+        for (let i = 0; i < top50.length; i++) {
+          const pct = Math.round(((i + 1) / 50) * 90);
+          showToast(`Searching Spotify… ${i + 1} / 50`, 'progress', pct);
+          const uri = await searchTrackUri(token, top50[i].song, top50[i].artist);
+          if (uri) uris.push(uri);
+          else notFound++;
+          await tick(55); // gentle rate-limit buffer
+        }
+
+        showToast('Creating playlist…', 'progress', 96);
+
+        const date     = fmtFull(dateStr);
+        const playlist = await spotifyFetch(token,
+          `https://api.spotify.com/v1/users/${me.id}/playlists`,
+          {
+            method: 'POST',
+            body: {
+              name:        `Hot 100 – ${date}`,
+              description: `Billboard Hot 100 Top 50 for the week of ${date}. Made with Chart Rewind.`,
+              public:      true,
+            },
+          }
+        );
+
+        if (uris.length > 0) {
+          await spotifyFetch(token,
+            `https://api.spotify.com/v1/playlists/${playlist.id}/tracks`,
+            { method: 'POST', body: { uris } }
+          );
+        }
+
+        const note = notFound > 0 ? ` (${notFound} not on Spotify)` : '';
+        showToast(
+          `✓ Playlist ready — ${uris.length} tracks${note}`,
+          'success', 100,
+          playlist.external_urls.spotify
+        );
+
+      } catch (err) {
+        if (err.status === 401) {
+          showToast('Session expired — reconnecting…', 'error');
+          setTimeout(() => onPlaylistClick(), 1600);
+        } else {
+          showToast('Error: ' + err.message, 'error');
+        }
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+
+    /* ── UI helpers ─────────────────────────────────────────────────── */
+
+    function toggleTop10() {
+      showTop10 = !showTop10;
+      const btn = document.getElementById('top10Btn');
+      btn.classList.toggle('on', showTop10);
+      btn.textContent = showTop10 ? 'All 100' : 'Top 10';
+      if (chart) renderChart(chart);
+    }
+
+    function showOverlay(msg) {
+      document.getElementById('overlayText').textContent = msg;
+      document.getElementById('overlay').classList.add('show');
+    }
+    function hideOverlay() {
+      document.getElementById('overlay').classList.remove('show');
+    }
+
+    function setDisabled(v) {
+      ['goBtn','shuffleBtn','heroPrev','heroNext','playlistBtn'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.disabled = v;
+      });
+    }
+
+    let toastTimer = null;
+
+    function showToast(msg, type = 'info', pct = null, link = null) {
+      const el   = document.getElementById('toast');
+      const msgEl = document.getElementById('toastMsg');
+      const bar  = document.getElementById('toastBar');
+      const fill = document.getElementById('toastFill');
+      const lnk  = document.getElementById('toastLink');
+
+      el.style.display  = '';
+      el.className      = `toast toast-${type}`;
+      msgEl.textContent = msg;
+
+      if (pct !== null) {
+        bar.style.display   = '';
+        fill.style.width    = pct + '%';
+      } else {
+        bar.style.display = 'none';
+      }
+
+      if (link) {
+        lnk.href          = link;
+        lnk.style.display = '';
+      } else {
+        lnk.style.display = 'none';
+      }
+
+      clearTimeout(toastTimer);
+      if (type !== 'progress') {
+        toastTimer = setTimeout(dismissToast, type === 'success' ? 9000 : 4500);
+      }
+    }
+
+    function dismissToast() {
+      const el = document.getElementById('toast');
+      el.style.transition = 'opacity .3s';
+      el.style.opacity    = '0';
+      setTimeout(() => { el.style.display = 'none'; el.style.opacity = ''; el.style.transition = ''; }, 320);
+    }
+
+    function showClientIdModal() {
+      document.getElementById('redirectUriLabel').textContent = getRedirectUri();
+      document.getElementById('clientIdModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+      document.getElementById('clientIdModal').style.display = 'none';
+    }
+
+    function handleModalBackdrop(e) {
+      if (e.target === document.getElementById('clientIdModal')) closeModal();
+    }
+
+    function saveClientId() {
+      const id = document.getElementById('clientIdInput').value.trim();
+      if (!id) return;
+      localStorage.setItem(LS.CLIENT_ID, id);
+      closeModal();
+      onPlaylistClick();
+    }
+
+    /* ── Boot ───────────────────────────────────────────────────────── */
+    init();
+  </script>
+</body>
+</html>
