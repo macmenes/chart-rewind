@@ -52,15 +52,6 @@ Or with Node:
 npx serve .
 ```
 
-## Deploying to GitHub Pages
-
-1. Push this repo to GitHub
-2. Go to **Settings → Pages**
-3. Set source to **Deploy from a branch**, branch `main`, folder `/` (root)
-4. Your app will be live at `https://macmenes.github.io/chart-rewind/`
-
-Add that URL as a Redirect URI in your Spotify Developer app settings.
-
 ## Data source
 
 Chart data from [mhollingshead/billboard-hot-100](https://github.com/mhollingshead/billboard-hot-100) — a complete archive of every Billboard Hot 100 chart served directly from GitHub's CDN.
