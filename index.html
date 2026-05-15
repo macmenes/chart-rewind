@@ -59,6 +59,9 @@
     }
 
     .brand {
+      display: flex;
+      align-items: center;
+      gap: .55rem;
       font-weight: 900;
       font-size: 1rem;
       letter-spacing: -.3px;
@@ -67,6 +70,15 @@
       user-select: none;
     }
     .brand span { color: var(--p) }
+
+    .brand-logo {
+      height: 30px;
+      width: auto;
+      display: block;
+      filter: invert(1);
+      mix-blend-mode: screen;
+      opacity: .88;
+    }
 
     .header-right {
       display: flex;
@@ -583,7 +595,10 @@
 
   <header class="app-header">
     <div class="header-row">
-      <div class="brand">Billboard <span>Hot 100</span></div>
+      <div class="brand">
+        <img src="logo.png" class="brand-logo" alt="">
+        Billboard <span>Hot 100</span>
+      </div>
       <div class="header-right">
         <div class="decade-bar" id="decadeBar">
           <button class="btn-dec" data-d="60s">60s</button>
