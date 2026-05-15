@@ -24,7 +24,7 @@ To use the "＋ Top 50 Playlist" button you need a free Spotify Developer app.
 2. Log in and click **Create app**
 3. Give it any name (e.g. "Chart Rewind"), tick **Web API**, accept terms
 4. In **Settings → Redirect URIs**, add your app URL:
-   - GitHub Pages: `https://YOUR_USERNAME.github.io/chart-rewind/`
+   - GitHub Pages: `https://macmenes.github.io/chart-rewind/`
    - Local: `http://localhost:8000/`
 5. Copy your **Client ID** (32-character hex string)
 
@@ -57,7 +57,7 @@ npx serve .
 1. Push this repo to GitHub
 2. Go to **Settings → Pages**
 3. Set source to **Deploy from a branch**, branch `main`, folder `/` (root)
-4. Your app will be live at `https://YOUR_USERNAME.github.io/chart-rewind/`
+4. Your app will be live at `https://macmenes.github.io/chart-rewind/`
 
 Add that URL as a Redirect URI in your Spotify Developer app settings.
 
